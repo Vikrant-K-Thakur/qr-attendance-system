@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/lib/models/User";
-import Attendance from "@/lib/models/Attendance";
+import AttendanceDAY1 from "@/lib/models/AttendanceDAY1";
+import AttendanceDAY2 from "@/lib/models/AttendanceDAY2";
+import AttendanceCOMBO from "@/lib/models/AttendanceCOMBO";
 
 export async function POST(req) {
   await dbConnect();
@@ -9,8 +11,36 @@ export async function POST(req) {
   const { userId, eventName } = await req.json();
   
   try {
-    // Try to find user with exact match first
-    let user = await User.findOne({ id: userId });
+    // Parse QR data to extract fields
+    const lines = userId.split('\n');
+    const parsedData = {};
+    
+    lines.forEach(line => {
+      const [key, ...valueParts] = line.split(':');
+      if (key && valueParts.length > 0) {
+        const value = valueParts.join(':').trim();
+        parsedData[key.trim()] = value;
+      }
+    });
+    
+    const name = parsedData['Name'];
+    const prn = parsedData['PRN'];
+    const email = parsedData['Email'];
+    const ticketType = parsedData['TicketType'];
+    const ticketId = parsedData['TicketID'];
+    
+    // Try to find user by ticketId first (most unique)
+    let user = ticketId ? await User.findOne({ ticketId }) : null;
+    
+    // If not found, try by PRN and name
+    if (!user && prn && name) {
+      user = await User.findOne({ prn, name });
+    }
+    
+    // If not found, try with exact id match
+    if (!user) {
+      user = await User.findOne({ id: userId });
+    }
     
     // If not found, try with normalized newlines
     if (!user) {
@@ -45,8 +75,20 @@ export async function POST(req) {
       );
     }
     
+    // Determine attendance model based on ticketType
+    let AttendanceModel;
+    if (user.ticketType === "DAY1") {
+      AttendanceModel = AttendanceDAY1;
+    } else if (user.ticketType === "DAY2") {
+      AttendanceModel = AttendanceDAY2;
+    } else if (user.ticketType === "COMBO") {
+      AttendanceModel = AttendanceCOMBO;
+    } else {
+      AttendanceModel = AttendanceDAY1; // Default fallback
+    }
+
     // Check if attendance is already marked
-    const existingAttendance = await Attendance.findOne({
+    const existingAttendance = await AttendanceModel.findOne({
       userId: user.id,
       registeredEvent: eventName,
     });
@@ -59,7 +101,7 @@ export async function POST(req) {
     }
 
     // Mark attendance
-    const attendance = await Attendance.create({ 
+    const attendance = await AttendanceModel.create({ 
       userId: user.id, 
       registeredEvent: eventName,
       timestamp: new Date()
