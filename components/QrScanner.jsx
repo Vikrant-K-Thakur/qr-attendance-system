@@ -45,12 +45,35 @@ const QrCodeScanner = ({ onScan }) => {
             (device) => device.kind === "videoinput"
           );
           if (videoDevices.length > 0) {
-            const selectedDeviceId = videoDevices[0].deviceId; // Choose the first camera
-            scannerRef.current.start(
-              { deviceId: selectedDeviceId },
-              config,
-              debouncedScan
+            // Try to find back camera (environment facing)
+            const backCamera = videoDevices.find(
+              (device) => device.label.toLowerCase().includes("back") || 
+                          device.label.toLowerCase().includes("rear") ||
+                          device.label.toLowerCase().includes("environment")
             );
+            
+            // Use back camera if found, otherwise try facingMode
+            if (backCamera) {
+              scannerRef.current.start(
+                { deviceId: backCamera.deviceId },
+                config,
+                debouncedScan
+              );
+            } else {
+              // Fallback to facingMode for mobile devices
+              scannerRef.current.start(
+                { facingMode: "environment" },
+                config,
+                debouncedScan
+              ).catch(() => {
+                // If environment fails, use first available camera
+                scannerRef.current.start(
+                  { deviceId: videoDevices[0].deviceId },
+                  config,
+                  debouncedScan
+                );
+              });
+            }
           } else {
             console.error("No video devices found");
           }
