@@ -23,28 +23,17 @@ export async function POST(req) {
       }
     });
     
-    const name = parsedData['Name'];
-    const prn = parsedData['PRN'] || null;
-    const email = parsedData['Email'];
-    const ticketType = parsedData['TicketType'];
+    // Normalize parsed data
+    const name = parsedData['Name']?.trim().toLowerCase();
+    const prn = parsedData['PRN']?.trim() || null;
+    const email = parsedData['Email']?.trim().toLowerCase();
+    const ticketType = parsedData['TicketType']?.trim();
     
-    // Find user based on whether PRN exists
+    // Find user by email (primary identifier)
     let user = null;
     
-    if (prn) {
-      // VIT Student: Use name + prn + email
-      if (name && email) {
-        user = await User.findOne({ name, prn, email });
-      }
-      // Fallback: prn + name
-      if (!user && name) {
-        user = await User.findOne({ prn, name });
-      }
-    } else {
-      // NON-VIT Student: Use email as primary identifier
-      if (email) {
-        user = await User.findOne({ email });
-      }
+    if (email) {
+      user = await User.findOne({ email });
     }
     
     // If not found, try with exact id match

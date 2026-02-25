@@ -8,7 +8,18 @@ export async function POST(req) {
   const { id, name, prn, email, ticketType, registeredEvent } = await req.json();
 
   try {
-    const user = await User.create({ id, name, prn, email, ticketType, registeredEvent });
+    const normalizedName = name?.trim().toLowerCase();
+    const normalizedEmail = email?.trim().toLowerCase();
+    const normalizedPrn = prn?.trim() || null;
+    
+    const user = await User.create({ 
+      id, 
+      name: normalizedName, 
+      prn: normalizedPrn, 
+      email: normalizedEmail, 
+      ticketType, 
+      registeredEvent 
+    });
     return NextResponse.json({ message: "User added successfully", user });
   } catch (error) {
     console.error("Error adding user:", error);
