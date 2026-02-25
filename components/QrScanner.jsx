@@ -11,9 +11,9 @@ const debounce = (func, wait) => {
 
 const QrCodeScanner = ({ onScan }) => {
   const scannerRef = useRef(null);
-  const [lastScannedCode, setLastScannedCode] = useState(null);
-  const [cooldown, setCooldown] = useState(false);
   const [cameraError, setCameraError] = useState(null);
+  const cooldownRef = useRef(false);
+  const lastScannedRef = useRef(null);
 
   useEffect(() => {
     const initializeScanner = async () => {
@@ -27,56 +27,39 @@ const QrCodeScanner = ({ onScan }) => {
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
         const debouncedScan = debounce((decodedText) => {
-          if (decodedText !== lastScannedCode && !cooldown) {
-            setLastScannedCode(decodedText);
-            setCooldown(true);
+          if (decodedText !== lastScannedRef.current && !cooldownRef.current) {
+            lastScannedRef.current = decodedText;
+            cooldownRef.current = true;
             onScan(decodedText);
 
             // Reset cooldown after 3 seconds
             setTimeout(() => {
-              setCooldown(false);
-              setLastScannedCode(null);
+              cooldownRef.current = false;
+              lastScannedRef.current = null;
             }, 3000);
           }
         }, 300);
 
-        navigator.mediaDevices.enumerateDevices().then((devices) => {
-          const videoDevices = devices.filter(
-            (device) => device.kind === "videoinput"
-          );
-          if (videoDevices.length > 0) {
-            // Try to find back camera (environment facing)
-            const backCamera = videoDevices.find(
-              (device) => device.label.toLowerCase().includes("back") || 
-                          device.label.toLowerCase().includes("rear") ||
-                          device.label.toLowerCase().includes("environment")
+        // Start with back camera (environment facing mode)
+        scannerRef.current.start(
+          { facingMode: "environment" },
+          config,
+          debouncedScan
+        ).catch((err) => {
+          console.warn("Environment camera failed, trying first available:", err);
+          // Fallback to first available camera if environment fails
+          navigator.mediaDevices.enumerateDevices().then((devices) => {
+            const videoDevices = devices.filter(
+              (device) => device.kind === "videoinput"
             );
-            
-            // Use back camera if found, otherwise try facingMode
-            if (backCamera) {
+            if (videoDevices.length > 0) {
               scannerRef.current.start(
-                { deviceId: backCamera.deviceId },
+                { deviceId: videoDevices[0].deviceId },
                 config,
                 debouncedScan
               );
-            } else {
-              // Fallback to facingMode for mobile devices
-              scannerRef.current.start(
-                { facingMode: "environment" },
-                config,
-                debouncedScan
-              ).catch(() => {
-                // If environment fails, use first available camera
-                scannerRef.current.start(
-                  { deviceId: videoDevices[0].deviceId },
-                  config,
-                  debouncedScan
-                );
-              });
             }
-          } else {
-            console.error("No video devices found");
-          }
+          });
         });
 
         console.log("QR scanner started successfully");
