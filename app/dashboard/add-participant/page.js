@@ -5,14 +5,16 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Users, QrCode, BarChart2, LogOut, Menu, X } from "lucide-react";
+import { Users, QrCode, BarChart2, LogOut, Menu, X, FileJson, Award, Ticket } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "Scan Attendance", icon: QrCode, href: "/" },
-  { label: "Total Attendance", icon: BarChart2, href: "/dashboard/attendance" },
-  { label: "Convert Data to JSON", icon: BarChart2, href: "/dashboard/convert-csv-json" },
+  { label: "Convert to JSON", icon: FileJson, href: "/dashboard/convert-data" },
   { label: "Add Participant", icon: Users, href: "/dashboard/add-participant" },
+  { label: "Send Tickets", icon: Ticket, href: "/dashboard/send-tickets" },
+  { label: "Total Attendance", icon: BarChart2, href: "/dashboard/attendance" },
+  { label: "Send Certificates", icon: Award, href: "/dashboard/certificates" },
 ];
 
 const collections = [
@@ -41,7 +43,6 @@ export default function AddParticipantPage() {
   const handleInsert = async () => {
     setAlert(null);
     setLoading(true);
-
     let users;
     try {
       users = JSON.parse(jsonInput);
@@ -51,7 +52,6 @@ export default function AddParticipantPage() {
       setLoading(false);
       return;
     }
-
     try {
       const response = await fetch("/api/bulk-add-users", {
         method: "POST",
@@ -59,10 +59,7 @@ export default function AddParticipantPage() {
         body: JSON.stringify({ users }),
       });
       const result = await response.json();
-      setAlert({
-        type: response.ok ? "success" : "error",
-        message: result.message,
-      });
+      setAlert({ type: response.ok ? "success" : "error", message: result.message });
       if (response.ok) setJsonInput("");
     } catch (error) {
       setAlert({ type: "error", message: "Error inserting participants." });
@@ -71,10 +68,7 @@ export default function AddParticipantPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
+    if (!confirmDelete) { setConfirmDelete(true); return; }
     setDeleteLoading(true);
     setAlert(null);
     try {
@@ -84,10 +78,7 @@ export default function AddParticipantPage() {
         body: JSON.stringify({ collection: selectedCollection }),
       });
       const result = await response.json();
-      setAlert({
-        type: response.ok ? "success" : "error",
-        message: result.message,
-      });
+      setAlert({ type: response.ok ? "success" : "error", message: result.message });
     } catch (error) {
       setAlert({ type: "error", message: "Error deleting collection." });
     }
@@ -102,7 +93,6 @@ export default function AddParticipantPage() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border flex flex-col transition-transform duration-200
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 md:static md:flex`}
@@ -139,12 +129,10 @@ export default function AddParticipantPage() {
         </div>
       </aside>
 
-      {/* Overlay for mobile */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen">
         <header className="flex items-center gap-4 px-6 py-4 border-b border-border bg-card">
           <button className="md:hidden" onClick={() => setSidebarOpen(true)}>
@@ -154,7 +142,6 @@ export default function AddParticipantPage() {
         </header>
 
         <main className="flex-1 p-6 space-y-6">
-          {/* Alert - shown above everything */}
           {alert && (
             <Alert
               variant={alert.type === "success" ? "default" : "destructive"}
@@ -172,7 +159,6 @@ export default function AddParticipantPage() {
             </Alert>
           )}
 
-          {/* Insert Card */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Bulk Insert Participants</CardTitle>
@@ -194,7 +180,6 @@ export default function AddParticipantPage() {
             </CardContent>
           </Card>
 
-          {/* Delete Card */}
           <Card className="border-destructive/40">
             <CardHeader>
               <CardTitle className="text-base text-destructive">Delete Collection</CardTitle>
@@ -233,7 +218,6 @@ export default function AddParticipantPage() {
               )}
             </CardContent>
           </Card>
-
         </main>
       </div>
     </div>
