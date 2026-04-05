@@ -20,6 +20,9 @@ export async function POST(req) {
     const nameY = parseInt(formData.get("nameY"));
     const fontSize = parseInt(formData.get("fontSize"));
     const fontColor = formData.get("fontColor") || "#000000";
+    const fontWeight = formData.get("fontWeight") || "bold";
+    const fontStyleVal = formData.get("fontStyle") || "normal";
+    const fontFamily = formData.get("fontFamily") || "Arial, Helvetica, sans-serif";
     const emailSubject = formData.get("emailSubject");
     const emailBody = formData.get("emailBody");
     const certFile = formData.get("certFile");
@@ -134,8 +137,9 @@ export async function POST(req) {
     x="${nameX}"
     y="${nameY}"
     font-size="${fontSize}"
-    font-family="Arial, Helvetica, sans-serif"
-    font-weight="bold"
+    font-family="${fontFamily}, Arial, sans-serif"
+    font-weight="${fontWeight}"
+    font-style="${fontStyleVal}"
     fill="rgb(${r},${g},${b})"
   >${displayName}</text>
 </svg>`;

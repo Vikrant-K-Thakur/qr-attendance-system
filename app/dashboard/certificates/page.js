@@ -26,6 +26,44 @@ const FONT_COLORS = [
   { label: "Navy", value: "#1a237e" },
   { label: "Dark Gray", value: "#333333" },
 ];
+const FONT_STYLES = [
+  { label: "Normal", fontWeight: "normal", fontStyle: "normal" },
+  { label: "Bold", fontWeight: "bold", fontStyle: "normal" },
+  { label: "Italic", fontWeight: "normal", fontStyle: "italic" },
+  { label: "Bold Italic", fontWeight: "bold", fontStyle: "italic" },
+];
+const FONT_FAMILIES = [
+  "Arial",
+  "Times New Roman",
+  "Georgia",
+  "Verdana",
+  "Trebuchet MS",
+  "Courier New",
+  "Palatino",
+  "Garamond",
+  "Roboto",
+  "Open Sans",
+  "Lato",
+  "Montserrat",
+  "Oswald",
+  "Raleway",
+  "Playfair Display",
+  "Merriweather",
+  "Ubuntu",
+  "Nunito",
+  "Poppins",
+  "Source Sans Pro",
+  "PT Serif",
+  "Libre Baskerville",
+  "Crimson Text",
+  "EB Garamond",
+  "Cormorant Garamond",
+  "Dancing Script",
+  "Pacifico",
+  "Great Vibes",
+  "Satisfy",
+  "Lobster",
+];
 
 const steps = [
   { id: 1, label: "Recipients" },
@@ -59,6 +97,8 @@ export default function CertificatesPage() {
   const [nameY, setNameY] = useState(DEFAULT_NAME_Y);
   const [fontSize, setFontSize] = useState(DEFAULT_FONT_SIZE);
   const [fontColor, setFontColor] = useState("#000000");
+  const [fontStyle, setFontStyle] = useState(FONT_STYLES[1]); // Default: Bold
+  const [fontFamily, setFontFamily] = useState("Montserrat");
 
   // Image display refs
   const imgRef = useRef(null);
@@ -76,6 +116,19 @@ export default function CertificatesPage() {
       router.push("/login");
     }
   }, [router]);
+
+  // Load Google Font dynamically when fontFamily changes
+  useEffect(() => {
+    const systemFonts = ["Arial", "Times New Roman", "Georgia", "Verdana", "Trebuchet MS", "Courier New", "Palatino", "Garamond"];
+    if (systemFonts.includes(fontFamily)) return;
+    const id = `gfont-${fontFamily.replace(/\s+/g, "-")}`;
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(/\s+/g, "+")}:wght@400;700&display=swap`;
+    document.head.appendChild(link);
+  }, [fontFamily]);
 
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
@@ -180,6 +233,9 @@ export default function CertificatesPage() {
       formData.append("nameY", nameY);
       formData.append("fontSize", fontSize);
       formData.append("fontColor", fontColor);
+      formData.append("fontWeight", fontStyle.fontWeight);
+      formData.append("fontStyle", fontStyle.fontStyle);
+      formData.append("fontFamily", fontFamily);
       formData.append("emailSubject", emailSubject);
       formData.append("emailBody", emailBody);
       formData.append("certFile", certificateFile);
@@ -382,7 +438,7 @@ export default function CertificatesPage() {
                 <CardContent className="space-y-4">
 
                   {/* Font style controls */}
-                  <div className="flex flex-wrap gap-4 items-center">
+                  <div className="flex flex-wrap gap-4 items-start">
                     <div className="flex items-center gap-2">
                       <label className="text-sm font-medium whitespace-nowrap">Font Size:</label>
                       <div className="flex gap-1 flex-wrap">
@@ -407,6 +463,32 @@ export default function CertificatesPage() {
                           />
                         ))}
                       </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium whitespace-nowrap">Style:</label>
+                      <div className="flex gap-1 flex-wrap">
+                        {FONT_STYLES.map((s) => (
+                          <button key={s.label} onClick={() => setFontStyle(s)}
+                            className={cn("px-3 py-1 rounded text-xs border transition-colors",
+                              fontStyle.label === s.label ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-input hover:bg-accent"
+                            )}
+                            style={{ fontWeight: s.fontWeight, fontStyle: s.fontStyle }}
+                          >{s.label}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 w-full">
+                      <label className="text-sm font-medium whitespace-nowrap">Font Family:</label>
+                      <select
+                        value={fontFamily}
+                        onChange={(e) => setFontFamily(e.target.value)}
+                        style={{ fontFamily: fontFamily }}
+                        className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                      >
+                        {FONT_FAMILIES.map((f) => (
+                          <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
@@ -445,7 +527,9 @@ export default function CertificatesPage() {
                             style={{
                               fontSize: `${dispFontSize}px`,
                               color: fontColor,
-                              fontWeight: "bold",
+                              fontWeight: fontStyle.fontWeight,
+                              fontStyle: fontStyle.fontStyle,
+                              fontFamily: fontFamily,
                               pointerEvents: "none",
                               whiteSpace: "nowrap",
                               textShadow: fontColor === "#FFFFFF" ? "0 0 3px #000" : "none",
@@ -497,15 +581,18 @@ export default function CertificatesPage() {
                   <div className="rounded-lg bg-muted/50 border border-border px-4 py-3">
                     <p className="text-xs text-muted-foreground mb-2 font-medium">Python values (auto-updated):</p>
                     <pre className="text-xs font-mono text-foreground leading-relaxed">
-{`NAME_X      = ${nameX}
-NAME_Y      = ${nameY}
-FONT_SIZE   = ${fontSize}
-FONT_COLOR  = "${fontColor}"`}
+{`NAME_X       = ${nameX}
+NAME_Y       = ${nameY}
+FONT_SIZE    = ${fontSize}
+FONT_COLOR   = "${fontColor}"
+FONT_WEIGHT  = "${fontStyle.fontWeight}"
+FONT_STYLE   = "${fontStyle.fontStyle}"
+FONT_FAMILY  = "${fontFamily}"`}
                     </pre>
                   </div>
 
                   <Button variant="outline" size="sm"
-                    onClick={() => { setNameX(DEFAULT_NAME_X); setNameY(DEFAULT_NAME_Y); setFontSize(DEFAULT_FONT_SIZE); setFontColor("#000000"); }}>
+                    onClick={() => { setNameX(DEFAULT_NAME_X); setNameY(DEFAULT_NAME_Y); setFontSize(DEFAULT_FONT_SIZE); setFontColor("#000000"); setFontStyle(FONT_STYLES[1]); setFontFamily("Montserrat"); }}>
                     Reset to Default
                   </Button>
                 </CardContent>
