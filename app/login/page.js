@@ -21,7 +21,7 @@ export default function LoginPage() {
 
     if (email === "abhivriddhi@gmail.com" && password === "abhivriddhi@123") {
       localStorage.setItem("isLoggedIn", "true");
-      router.push("/dashboard");
+      router.push("/guidelines");
     } else {
       setError("Invalid email or password.");
       setLoading(false);
