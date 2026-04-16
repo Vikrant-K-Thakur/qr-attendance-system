@@ -1,116 +1,130 @@
-# QR Code Attendance System
+# Abhivriddhi - Event Attendance System
 
-A Next.js-based attendance management system that allows event registration and QR code-based attendance marking.
+A Next.js web application to manage event attendance using QR codes, with tools to register participants, send tickets, track attendance, and send certificates.
 
-## Features
-
-- **Event Registration**: Add users with unique IDs for specific events
-- **QR Code Scanning**: Real-time QR code scanning for attendance marking
-- **Event Management**: Support for multiple events (Event A, B, C)
-- **Duplicate Prevention**: Prevents marking attendance twice for the same user/event
-- **Partial QR Matching**: Handles truncated QR codes automatically
-- **MongoDB Integration**: Stores user and attendance data in MongoDB Atlas
+---
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, React, Tailwind CSS
+- **Frontend**: Next.js, React, Tailwind CSS, Radix UI
 - **Backend**: Next.js API Routes
-- **Database**: MongoDB Atlas
-- **QR Scanner**: html5-qrcode library
-- **UI Components**: Custom components with Radix UI
+- **Database**: MongoDB Atlas (Mongoose)
+- **QR Scanner**: html5-qrcode
+- **Email**: Nodemailer (Gmail)
+- **Image Processing**: Sharp
+
+---
 
 ## Setup
 
-1. **Clone the repository**
+1. **Clone & Install**
    ```bash
    git clone <repository-url>
    cd qr-attendance
-   ```
-
-2. **Install dependencies**
-   ```bash
    npm install
    ```
 
-3. **Environment Setup**
-   Create a `.env` file in the root directory:
+2. **Environment Variables**
+
+   Create a `.env` file in the root:
    ```env
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database
+   # MongoDB
+   MONGODB_URI=mongodb://localhost:27017/qr-attendance
+
+   # Gmail (use App Password, not regular password)
+   EMAIL=your_email@gmail.com
+   EMAIL_PASSWORD=your_app_password
    ```
 
-4. **Run the development server**
+   > To generate Gmail App Password: Google Account → Security → 2-Step Verification → App Passwords
+
+3. **Run**
    ```bash
    npm run dev
    ```
+   Open [http://localhost:3000](http://localhost:3000)
 
-5. **Open** [http://localhost:3000](http://localhost:3000)
+---
 
-## API Endpoints
+## Pages
 
-### Add User
-```http
-POST /api/add-user
-Content-Type: application/json
+| Route | Access | Description |
+|-------|--------|-------------|
+| `/` | Public | QR code scanner to mark attendance |
+| `/login` | Public | Admin login |
+| `/guidelines` | Admin | How-to guide for using the system |
+| `/convert-data` | Admin | Convert CSV/Excel to JSON |
+| `/add-participant` | Admin | Bulk insert participants, delete collections |
+| `/send-tickets` | Admin | Send event tickets with QR codes via email |
+| `/attendance` | Admin | View, filter, and export attendance records |
+| `/certificates` | Admin | Send personalized certificates via email |
 
-{
-  "id": "Name:John Doe\nPRN:12345\nTicketID:ABC123 Event A",
-  "name": "John Doe",
-  "prn": "12345",
-  "registeredEvent": "Event A"
-}
+**Admin credentials:**
+```
+Email:    abhivriddhi@gmail.com
+Password: abhivriddhi@123
 ```
 
-### Mark Attendance
-```http
-POST /api/mark-attendance
-Content-Type: application/json
+---
 
-{
-  "userId": "Name:John Doe\nPRN:12345\nTicketID:ABC123",
-  "eventName": "Event A"
-}
+## Database Collections
+
+| Collection | Purpose |
+|-----------|---------|
+| `users` | Registered participants |
+| `attendanceday1s` | Attendance for DAY1 ticket holders |
+| `attendanceday2s` | Attendance for DAY2 ticket holders |
+| `attendancecombos` | Attendance for COMBO ticket holders |
+| `certificatesents` | Tracks who already received a certificate |
+
+---
+
+## QR Code Format
+
+QR codes are generated with this exact format:
+
+**VIT Students (with PRN):**
+```
+Name:VIKRANT THAKUR
+PRN:12412111
+Email:vikrant@vit.edu
+TicketType:DAY1
 ```
 
-## Usage
-
-1. **Register Users**: Use the `/api/add-user` endpoint to register users for events
-2. **Select Event**: Choose the event from the dropdown on the main page
-3. **Start Scanner**: Click "Start Scanner" to activate QR code scanning
-4. **Scan QR Code**: Point camera at QR code to mark attendance
-5. **View Results**: Success/error messages appear instantly
-
-## Database Schema
-
-### User Collection
-```javascript
-{
-  id: String (unique),
-  name: String,
-  prn: String,
-  registeredEvent: [String]
-}
+**Non-VIT Students (without PRN):**
+```
+Name:JIDNYESH TOKE
+Email:jidnyesh@gmail.com
+TicketType:DAY2
 ```
 
-### Attendance Collection
-```javascript
-{
-  userId: String,
-  registeredEvent: String,
-  timestamp: Date
-}
+---
+
+## CSV Format (for Convert to JSON)
+
+```csv
+Name,PRN,Email,TicketType,RegisteredEvent
+VIKRANT THAKUR,12412111,vikrant@vit.edu,COMBO,Event A
+JIDNYESH TOKE,,jidnyesh@gmail.com,DAY1,Event A
 ```
 
-## Deployment
+| Column | Required | Notes |
+|--------|----------|-------|
+| Name | ✅ | Full name in uppercase |
+| PRN | ❌ | Leave empty for non-VIT students |
+| Email | ✅ | Used as primary identifier |
+| TicketType | ✅ | `DAY1`, `DAY2`, or `COMBO` |
+| RegisteredEvent | ✅ | `Event A`, `Event B`, or `Event C` |
 
-### Vercel (Recommended)
-1. Push code to GitHub
-2. Connect repository to Vercel
-3. Add `MONGODB_URI` environment variable
-4. Deploy
+---
 
-### Other Platforms
-Ensure Node.js 18+ support and set the `MONGODB_URI` environment variable.
+## Workflow
 
-## License
-
-MIT License
+```
+1. Convert CSV → JSON       (Convert to JSON page)
+2. Insert participants      (Add Participant page)
+3. Send event tickets       (Send Tickets page)
+4. Scan QR on event day     (Main page — public)
+5. View attendance          (Total Attendance page)
+6. Send certificates        (Send Certificates page)
+```

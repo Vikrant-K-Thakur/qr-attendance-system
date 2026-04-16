@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Users, QrCode, BarChart2, LogOut, Menu, X, FileJson, Award, Ticket, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Tooltip from "@/components/Tooltip";
 
 const navItems = [
   { label: "Guidelines", icon: BookOpen, href: "/guidelines" },
@@ -146,9 +147,12 @@ export default function AddParticipantPage() {
               <textarea value={jsonInput} onChange={(e) => setJsonInput(e.target.value)}
                 placeholder={`Paste JSON array here...\n[\n  {\n    "id": "Name:VIKRANT THAKUR\\nPRN:12412111\\nEmail:vikrant@vit.edu\\nTicketType:COMBO",\n    "name": "VIKRANT THAKUR",\n    "prn": "12412111",\n    "email": "vikrant@vit.edu",\n    "ticketType": "COMBO",\n    "registeredEvent": ["Event A"]\n  }\n]`}
                 rows={16} className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring font-mono resize-y" />
-              <Button onClick={handleInsert} disabled={loading || !jsonInput.trim()} className="w-full">
-                {loading ? "Inserting..." : "Insert Participants"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button onClick={handleInsert} disabled={loading || !jsonInput.trim()} className="w-full">
+                  {loading ? "Inserting..." : "Insert Participants"}
+                </Button>
+                <Tooltip text="Inserts all participants from the JSON array into the database. Duplicate emails are skipped automatically." />
+              </div>
             </CardContent>
           </Card>
 
@@ -158,11 +162,14 @@ export default function AddParticipantPage() {
               <p className="text-sm text-muted-foreground">Select a collection and delete all its documents. This action cannot be undone.</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <select value={selectedCollection} onChange={(e) => { setSelectedCollection(e.target.value); setConfirmDelete(false); }}
-                className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
-                <option value="">Select collection to delete</option>
-                {collections.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-              </select>
+              <div className="flex items-center gap-2">
+                <select value={selectedCollection} onChange={(e) => { setSelectedCollection(e.target.value); setConfirmDelete(false); }}
+                  className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring">
+                  <option value="">Select collection to delete</option>
+                  {collections.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                </select>
+                <Tooltip text="Users: registered participants. Attendance: scan records. Certificates Sent: tracks who already received a certificate. Everything: wipes all data." />
+              </div>
               {confirmDelete && (
                 <p className="text-sm text-destructive font-medium">
                   ⚠️ Are you sure? This will permanently delete

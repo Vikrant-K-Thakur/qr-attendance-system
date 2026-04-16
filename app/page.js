@@ -15,6 +15,7 @@ import QrScanner from "@/components/QrScanner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Tooltip from "@/components/Tooltip";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -67,19 +68,25 @@ export default function AdminPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <Select onValueChange={(value) => setSelectedEvent(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select event" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Event A">Event A</SelectItem>
-                  <SelectItem value="Event B">Event B</SelectItem>
-                  <SelectItem value="Event C">Event C</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button onClick={() => setScannerActive(!scannerActive)}>
-                {scannerActive ? "Stop Scanner" : "Start Scanner"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Select onValueChange={(value) => setSelectedEvent(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select event" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Event A">Event A</SelectItem>
+                    <SelectItem value="Event B">Event B</SelectItem>
+                    <SelectItem value="Event C">Event C</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Tooltip text="Select the event you want to mark attendance for before starting the scanner." />
+              </div>
+              <div className="flex items-center gap-2">
+                <Button onClick={() => setScannerActive(!scannerActive)}>
+                  {scannerActive ? "Stop Scanner" : "Start Scanner"}
+                </Button>
+                <Tooltip text={scannerActive ? "Click to stop the camera scanner." : "Click to activate the camera and start scanning participant QR codes. Make sure an event is selected first."} />
+              </div>
               {scanResult && <p>Last scanned: {scanResult}</p>}
               {alert && (
                 <Alert

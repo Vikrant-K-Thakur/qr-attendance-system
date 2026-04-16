@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, QrCode, BarChart2, LogOut, Menu, X, FileJson, Award, Upload, Send, Ticket, Mail, ChevronRight, ChevronLeft, Check, Move, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Tooltip from "@/components/Tooltip";
 
 const navItems = [
   { label: "Guidelines", icon: BookOpen, href: "/guidelines" },
@@ -445,7 +446,10 @@ export default function SendTicketsPage() {
 
                   {/* Python code snippet */}
                   <div className="rounded-lg bg-muted/50 border border-border px-4 py-3">
-                    <p className="text-xs text-muted-foreground mb-2 font-medium">Python values (auto-updated):</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <p className="text-xs text-muted-foreground font-medium">Python values (auto-updated):</p>
+                      <Tooltip text="These coordinates are used in the Python script to place the QR code on the ticket image." />
+                    </div>
                     <pre className="text-xs font-mono text-foreground leading-relaxed">
 {`QR_SIZE = ${qrSize}
 QR_X    = ${qrX}

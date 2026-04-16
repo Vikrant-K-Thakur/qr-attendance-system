@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, QrCode, BarChart2, LogOut, Menu, X, FileJson, Award, Upload, Send, Ticket, Mail, ChevronRight, ChevronLeft, Check, Type, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Tooltip from "@/components/Tooltip";
 
 const navItems = [
   { label: "Guidelines", icon: BookOpen, href: "/guidelines" },
@@ -490,6 +491,7 @@ export default function CertificatesPage() {
                           <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>
                         ))}
                       </select>
+                      <Tooltip text="Choose the font for the attendee's name on the certificate. Preview updates live on the image below." />
                     </div>
                   </div>
 
@@ -580,7 +582,10 @@ export default function CertificatesPage() {
 
                   {/* Python code snippet */}
                   <div className="rounded-lg bg-muted/50 border border-border px-4 py-3">
-                    <p className="text-xs text-muted-foreground mb-2 font-medium">Python values (auto-updated):</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <p className="text-xs text-muted-foreground font-medium">Python values (auto-updated):</p>
+                      <Tooltip text="These values are used in the Python script to place the attendee's name on the certificate image." />
+                    </div>
                     <pre className="text-xs font-mono text-foreground leading-relaxed">
 {`NAME_X       = ${nameX}
 NAME_Y       = ${nameY}
@@ -669,10 +674,13 @@ FONT_FAMILY  = "${fontFamily}"`}
                     </div>
                   )}
 
-                  <Button className="w-full" onClick={handleSend} disabled={sending || !certificateFile}>
-                    <Send className="h-4 w-4 mr-2" />
-                    {sending ? "Sending Certificates..." : "Send Certificates to Attendees"}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button className="w-full" onClick={handleSend} disabled={sending || !certificateFile}>
+                      <Send className="h-4 w-4 mr-2" />
+                      {sending ? "Sending Certificates..." : "Send Certificates to Attendees"}
+                    </Button>
+                    <Tooltip text="Sends a personalized certificate to each attendee. Each person receives it only once per event — duplicates are automatically skipped." />
+                  </div>
                 </CardContent>
               </>
             )}

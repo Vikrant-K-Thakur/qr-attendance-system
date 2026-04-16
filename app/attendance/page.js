@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, QrCode, BarChart2, LogOut, Menu, X, FileJson, RefreshCw, Download, Award, Ticket, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Tooltip from "@/components/Tooltip";
 
 const navItems = [
   { label: "Guidelines", icon: BookOpen, href: "/guidelines" },
@@ -144,10 +145,13 @@ export default function AttendancePage() {
             </button>
             <span className="font-semibold text-sm">Total Attendance</span>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchAttendance} disabled={loading}>
-            <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={fetchAttendance} disabled={loading}>
+              <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+              Refresh
+            </Button>
+            <Tooltip text="Fetches the latest attendance data from the database." />
+          </div>
         </header>
 
         <main className="flex-1 p-6 space-y-6 overflow-auto">
@@ -181,50 +185,34 @@ export default function AttendancePage() {
                     <label className="text-sm font-medium whitespace-nowrap">Ticket Type:</label>
                     <div className="flex gap-1">
                       {TICKET_TYPES.map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => setTicketType(t)}
-                          className={cn(
-                            "px-3 py-1 rounded-md text-xs font-medium border transition-colors",
-                            ticketType === t
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-transparent border-input hover:bg-accent"
-                          )}
-                        >
-                          {t}
-                        </button>
+                        <button key={t} onClick={() => setTicketType(t)}
+                          className={cn("px-3 py-1 rounded-md text-xs font-medium border transition-colors",
+                            ticketType === t ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-input hover:bg-accent"
+                          )}>{t}</button>
                       ))}
                     </div>
+                    <Tooltip text="Filter records by ticket type. DAY1, DAY2, or COMBO." />
                   </div>
                   <div className="flex items-center gap-2">
                     <label className="text-sm font-medium whitespace-nowrap">Event:</label>
                     <div className="flex gap-1">
                       {EVENTS.map((e) => (
-                        <button
-                          key={e}
-                          onClick={() => setEvent(e)}
-                          className={cn(
-                            "px-3 py-1 rounded-md text-xs font-medium border transition-colors",
-                            event === e
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-transparent border-input hover:bg-accent"
-                          )}
-                        >
-                          {e}
-                        </button>
+                        <button key={e} onClick={() => setEvent(e)}
+                          className={cn("px-3 py-1 rounded-md text-xs font-medium border transition-colors",
+                            event === e ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-input hover:bg-accent"
+                          )}>{e}</button>
                       ))}
                     </div>
+                    <Tooltip text="Filter records by event name." />
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownload}
-                  disabled={!data || data.records.length === 0}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Excel
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={handleDownload} disabled={!data || data.records.length === 0}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Excel
+                  </Button>
+                  <Tooltip text="Downloads the currently filtered attendance records as a CSV file that opens in Excel." />
+                </div>
               </div>
             </CardContent>
           </Card>
