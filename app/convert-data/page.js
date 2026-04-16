@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, QrCode, BarChart2, LogOut, Menu, X, FileJson, Upload, File, Award, Ticket, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 const navItems = [
   { label: "Guidelines", icon: BookOpen, href: "/guidelines" },
@@ -19,21 +20,11 @@ const navItems = [
 
 export default function ConvertDataPage() {
   const router = useRouter();
+  const { logout, loading: authLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const fileInputRef = useRef(null);
-
-  useEffect(() => {
-    if (localStorage.getItem("isLoggedIn") !== "true") {
-      router.push("/login");
-    }
-  }, [router]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    router.push("/login");
-  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -56,6 +47,8 @@ export default function ConvertDataPage() {
     const ext = fileName.split(".").pop().toLowerCase();
     return ext === "csv" ? "CSV" : ext === "xlsx" || ext === "xls" ? "XLS" : "DOC";
   };
+
+  if (authLoading) return null;
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -87,7 +80,7 @@ export default function ConvertDataPage() {
         </nav>
         <div className="px-3 py-4 border-t border-border">
           <button
-            onClick={handleLogout}
+            onClick={logout}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors text-destructive"
           >
             <LogOut className="h-4 w-4" />

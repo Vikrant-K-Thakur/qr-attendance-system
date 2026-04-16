@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, QrCode, BarChart2, LogOut, Menu, X, FileJson, Award, Ticket, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 const navItems = [
   { label: "Guidelines", icon: BookOpen, href: "/guidelines" },
@@ -130,19 +131,11 @@ JIDNYESH TOKE,,jidnyesh@gmail.com,DAY2,Event A`,
 
 export default function GuidelinesPage() {
   const router = useRouter();
+  const { logout, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expanded, setExpanded] = useState(null);
 
-  useEffect(() => {
-    if (localStorage.getItem("isLoggedIn") !== "true") {
-      router.push("/login");
-    }
-  }, [router]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    router.push("/login");
-  };
+  if (loading) return null;
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -174,7 +167,7 @@ export default function GuidelinesPage() {
         </nav>
         <div className="px-3 py-4 border-t border-border">
           <button
-            onClick={handleLogout}
+            onClick={logout}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors text-destructive"
           >
             <LogOut className="h-4 w-4" />

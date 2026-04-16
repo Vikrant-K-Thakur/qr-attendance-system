@@ -14,16 +14,28 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    if (email === "abhivriddhi@gmail.com" && password === "abhivriddhi@123") {
-      localStorage.setItem("isLoggedIn", "true");
-      router.push("/guidelines");
-    } else {
-      setError("Invalid email or password.");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        router.push("/guidelines");
+      } else {
+        setError(data.message || "Invalid email or password.");
+        setLoading(false);
+      }
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
       setLoading(false);
     }
   };

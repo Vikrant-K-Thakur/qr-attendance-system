@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, QrCode, BarChart2, LogOut, Menu, X, FileJson, RefreshCw, Download, Award, Ticket, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Tooltip from "@/components/Tooltip";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 const navItems = [
   { label: "Guidelines", icon: BookOpen, href: "/guidelines" },
@@ -23,17 +24,12 @@ const EVENTS = ["ALL", "Event A", "Event B", "Event C"];
 
 export default function AttendancePage() {
   const router = useRouter();
+  const { logout, loading: authLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [ticketType, setTicketType] = useState("ALL");
   const [event, setEvent] = useState("ALL");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (localStorage.getItem("isLoggedIn") !== "true") {
-      router.push("/login");
-    }
-  }, [router]);
 
   const fetchAttendance = useCallback(async () => {
     setLoading(true);
@@ -51,10 +47,9 @@ export default function AttendancePage() {
     fetchAttendance();
   }, [fetchAttendance]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    router.push("/login");
-  };
+  const handleLogout = () => { logout(); };
+
+  if (authLoading) return null;
 
   const formatDate = (ts) => {
     if (!ts) return "-";

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, QrCode, BarChart2, LogOut, Menu, X, FileJson, Award, Upload, Send, Ticket, Mail, ChevronRight, ChevronLeft, Check, Move, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Tooltip from "@/components/Tooltip";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 const navItems = [
   { label: "Guidelines", icon: BookOpen, href: "/guidelines" },
@@ -64,16 +65,9 @@ export default function SendTicketsPage() {
   const dragStart = useRef({ mouseX: 0, mouseY: 0, qrX: 0, qrY: 0 });
   const resizeStart = useRef({ mouseX: 0, mouseY: 0, size: 0 });
 
-  useEffect(() => {
-    if (localStorage.getItem("isLoggedIn") !== "true") {
-      router.push("/login");
-    }
-  }, [router]);
+  const { logout, loading: authLoading } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    router.push("/login");
-  };
+  const handleLogout = () => { logout(); };
 
   const handleTicketFileChange = (e) => {
     const file = e.target.files[0];
@@ -187,6 +181,8 @@ export default function SendTicketsPage() {
   };
 
   const totalSteps = steps.length;
+
+  if (authLoading) return null;
 
   return (
     <div className="min-h-screen flex bg-background">

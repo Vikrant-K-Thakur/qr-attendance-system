@@ -11,9 +11,11 @@
   "dependencies": {
     "@radix-ui/react-select": "^2.1.5",
     "@radix-ui/react-slot": "^1.1.1",
+    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "html5-qrcode": "^2.3.8",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.474.0",
     "mongoose": "^8.9.5",
     "next": "^15.2.0",

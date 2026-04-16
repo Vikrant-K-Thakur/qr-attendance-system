@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Users, QrCode, BarChart2, LogOut, Menu, X, FileJson, Award, Ticket, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/hooks/useAuth";
 import Tooltip from "@/components/Tooltip";
 
 const navItems = [
@@ -30,6 +31,7 @@ const collections = [
 
 export default function AddParticipantPage() {
   const router = useRouter();
+  const { logout, loading: authLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [jsonInput, setJsonInput] = useState("");
   const [alert, setAlert] = useState(null);
@@ -38,11 +40,7 @@ export default function AddParticipantPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  useEffect(() => {
-    if (localStorage.getItem("isLoggedIn") !== "true") {
-      router.push("/login");
-    }
-  }, [router]);
+  if (authLoading) return null;
 
   const handleInsert = async () => {
     setAlert(null);
@@ -90,11 +88,6 @@ export default function AddParticipantPage() {
     setConfirmDelete(false);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    router.push("/login");
-  };
-
   return (
     <div className="min-h-screen flex bg-background">
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border flex flex-col transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 md:static md:flex`}>
@@ -112,7 +105,7 @@ export default function AddParticipantPage() {
           ))}
         </nav>
         <div className="px-3 py-4 border-t border-border">
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors text-destructive">
+          <button onClick={logout} className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors text-destructive">
             <LogOut className="h-4 w-4" />Logout
           </button>
         </div>
