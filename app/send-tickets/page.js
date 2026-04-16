@@ -62,12 +62,58 @@ export default function SendTicketsPage() {
   const [resizing, setResizing] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState(null);
+  const [progress, setProgress] = useState(null);
+  const [failedList, setFailedList] = useState([]);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [generatingPreview, setGeneratingPreview] = useState(false);
+  const previewCanvasRef = useRef(null);
   const dragStart = useRef({ mouseX: 0, mouseY: 0, qrX: 0, qrY: 0 });
   const resizeStart = useRef({ mouseX: 0, mouseY: 0, size: 0 });
 
   const { logout, loading: authLoading } = useAuth();
 
   const handleLogout = () => { logout(); };
+
+  // Generate ticket preview with QR code using Canvas API
+  const generatePreview = async () => {
+    if (!ticketPreviewUrl) return;
+    setGeneratingPreview(true);
+    setPreviewUrl(null);
+    try {
+      // Load ticket image
+      const ticketImg = new Image();
+      ticketImg.crossOrigin = "anonymous";
+      await new Promise((resolve, reject) => {
+        ticketImg.onload = resolve;
+        ticketImg.onerror = reject;
+        ticketImg.src = ticketPreviewUrl;
+      });
+
+      // Fetch sample QR code from qrserver
+      const sampleQrData = encodeURIComponent("Name:Sample User\nPRN:12345678\nEmail:sample@example.com\nTicketType:DAY1");
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${sampleQrData}`;
+      const qrImg = new Image();
+      qrImg.crossOrigin = "anonymous";
+      await new Promise((resolve, reject) => {
+        qrImg.onload = resolve;
+        qrImg.onerror = reject;
+        qrImg.src = qrUrl;
+      });
+
+      // Draw on canvas
+      const canvas = document.createElement("canvas");
+      canvas.width = ticketImg.naturalWidth;
+      canvas.height = ticketImg.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(ticketImg, 0, 0);
+      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+
+      setPreviewUrl(canvas.toDataURL("image/png"));
+    } catch (err) {
+      console.error("Preview generation failed:", err);
+    }
+    setGeneratingPreview(false);
+  };
 
   const handleTicketFileChange = (e) => {
     const file = e.target.files[0];
@@ -157,6 +203,8 @@ export default function SendTicketsPage() {
   const handleSend = async () => {
     setSending(true);
     setSendResult(null);
+    setProgress(null);
+    setFailedList([]);
     try {
       const formData = new FormData();
       formData.append("ticketType", selectedTicketType);
@@ -168,16 +216,40 @@ export default function SendTicketsPage() {
       formData.append("emailBody", emailBody);
       formData.append("ticketFile", ticketFile);
 
-      const res = await fetch("/api/send-tickets", {
-        method: "POST",
-        body: formData,
-      });
-      const result = await res.json();
-      setSendResult({ type: res.ok ? "success" : "error", message: result.message });
+      const res = await fetch("/api/send-tickets-stream", { method: "POST", body: formData });
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop();
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === "total") {
+              setProgress({ sent: 0, failed: 0, total: data.total });
+            } else if (data.type === "progress") {
+              setProgress({ sent: data.sent, failed: data.failed, total: data.total });
+            } else if (data.type === "done") {
+              setProgress({ sent: data.sent, failed: data.failed, total: data.total });
+              setFailedList(data.failedList || []);
+              setSendResult({
+                type: data.failed === 0 ? "success" : "warning",
+                message: `Done! Sent: ${data.sent}, Failed: ${data.failed} out of ${data.total}`,
+              });
+              setSending(false);
+            }
+          }
+        }
+      }
     } catch (err) {
       setSendResult({ type: "error", message: "Failed to send tickets." });
+      setSending(false);
     }
-    setSending(false);
   };
 
   const totalSteps = steps.length;
@@ -273,7 +345,7 @@ export default function SendTicketsPage() {
           </div>
 
           {/* Step Content */}
-          <Card className={cn("mx-auto", currentStep === 3 ? "max-w-4xl" : "max-w-2xl")}>
+          <Card className={cn("mx-auto", currentStep === 3 || currentStep === 5 ? "max-w-4xl" : "max-w-2xl")}>
 
             {/* Step 1 - Recipients */}
             {currentStep === 1 && (
@@ -496,6 +568,29 @@ QR_Y    = ${qrY}`}
                   <p className="text-sm text-muted-foreground">Review your settings before sending tickets to participants.</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
+
+                  {/* QR Preview */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">Ticket Preview</p>
+                      <Button variant="outline" size="sm" onClick={generatePreview} disabled={generatingPreview || !ticketPreviewUrl}>
+                        {generatingPreview ? "Generating..." : "Generate Preview"}
+                      </Button>
+                    </div>
+                    {previewUrl ? (
+                      <div className="rounded-lg overflow-hidden border border-border">
+                        <img src={previewUrl} alt="Ticket Preview" className="w-full h-auto block" />
+                        <p className="text-xs text-center text-muted-foreground py-2 bg-muted/30">
+                          Preview uses a sample QR code. Actual tickets will have each participant's unique QR.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-border flex items-center justify-center h-24 text-xs text-muted-foreground">
+                        Click "Generate Preview" to see how the ticket will look with the QR code.
+                      </div>
+                    )}
+                  </div>
+
                   <div className="rounded-lg border border-border divide-y divide-border text-sm">
                     <div className="flex justify-between px-4 py-3">
                       <span className="text-muted-foreground flex items-center gap-2"><Users className="h-3.5 w-3.5" /> Recipients</span>
@@ -524,15 +619,52 @@ QR_Y    = ${qrY}`}
                       "px-4 py-3 rounded-lg border text-sm font-medium",
                       sendResult.type === "success"
                         ? "border-green-600 text-green-600 bg-green-50"
+                        : sendResult.type === "warning"
+                        ? "border-yellow-500 text-yellow-700 bg-yellow-50"
                         : "border-destructive text-destructive bg-destructive/10"
                     )}>
                       {sendResult.message}
                     </div>
                   )}
 
+                  {/* Progress Bar */}
+                  {progress && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Sending tickets...</span>
+                        <span>{progress.sent + progress.failed} / {progress.total}</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary transition-all duration-300 rounded-full"
+                          style={{ width: `${progress.total > 0 ? ((progress.sent + progress.failed) / progress.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                      <div className="flex gap-4 text-xs">
+                        <span className="text-green-600">✓ Sent: {progress.sent}</span>
+                        {progress.failed > 0 && <span className="text-destructive">✗ Failed: {progress.failed}</span>}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Failed List */}
+                  {failedList.length > 0 && (
+                    <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 space-y-2">
+                      <p className="text-xs font-medium text-destructive">Failed Emails ({failedList.length}):</p>
+                      <div className="space-y-1 max-h-40 overflow-y-auto">
+                        {failedList.map((f, i) => (
+                          <div key={i} className="text-xs flex gap-2">
+                            <span className="text-destructive font-medium shrink-0">{f.email}</span>
+                            <span className="text-muted-foreground truncate">— {f.reason}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <Button className="w-full" onClick={handleSend} disabled={sending || !ticketFile}>
                     <Send className="h-4 w-4 mr-2" />
-                    {sending ? "Sending Tickets..." : "Send Tickets to Participants"}
+                    {sending ? `Sending... (${progress?.sent ?? 0}/${progress?.total ?? "?"})` : "Send Tickets to Participants"}
                   </Button>
                 </CardContent>
               </>

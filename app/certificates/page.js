@@ -111,6 +111,8 @@ export default function CertificatesPage() {
   const [resizing, setResizing] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState(null);
+  const [progress, setProgress] = useState(null);
+  const [failedList, setFailedList] = useState([]);
   const dragStart = useRef({ mouseX: 0, mouseY: 0, nameX: 0, nameY: 0 });
   const resizeStart = useRef({ mouseX: 0, mouseY: 0, size: 0 });
 
@@ -221,6 +223,8 @@ export default function CertificatesPage() {
   const handleSend = async () => {
     setSending(true);
     setSendResult(null);
+    setProgress(null);
+    setFailedList([]);
     try {
       const formData = new FormData();
       formData.append("ticketType", selectedTicketType);
@@ -236,16 +240,40 @@ export default function CertificatesPage() {
       formData.append("emailBody", emailBody);
       formData.append("certFile", certificateFile);
 
-      const res = await fetch("/api/send-certificates", {
-        method: "POST",
-        body: formData,
-      });
-      const result = await res.json();
-      setSendResult({ type: res.ok ? "success" : "error", message: result.message });
+      const res = await fetch("/api/send-certificates-stream", { method: "POST", body: formData });
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop();
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === "total") {
+              setProgress({ sent: 0, failed: 0, skipped: 0, total: data.total });
+            } else if (data.type === "progress") {
+              setProgress({ sent: data.sent, failed: data.failed, skipped: data.skipped, total: data.total });
+            } else if (data.type === "done") {
+              setProgress({ sent: data.sent, failed: data.failed, skipped: data.skipped, total: data.total });
+              setFailedList(data.failedList || []);
+              setSendResult({
+                type: data.failed === 0 ? "success" : "warning",
+                message: `Done! Sent: ${data.sent}, Skipped: ${data.skipped}, Failed: ${data.failed} out of ${data.total}`,
+              });
+              setSending(false);
+            }
+          }
+        }
+      }
     } catch (err) {
       setSendResult({ type: "error", message: "Failed to send certificates." });
+      setSending(false);
     }
-    setSending(false);
   };
 
   const totalSteps = steps.length;
@@ -664,16 +692,54 @@ FONT_FAMILY  = "${fontFamily}"`}
                       "px-4 py-3 rounded-lg border text-sm font-medium",
                       sendResult.type === "success"
                         ? "border-green-600 text-green-600 bg-green-50"
+                        : sendResult.type === "warning"
+                        ? "border-yellow-500 text-yellow-700 bg-yellow-50"
                         : "border-destructive text-destructive bg-destructive/10"
                     )}>
                       {sendResult.message}
                     </div>
                   )}
 
+                  {/* Progress Bar */}
+                  {progress && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Sending certificates...</span>
+                        <span>{progress.sent + progress.failed + progress.skipped} / {progress.total}</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary transition-all duration-300 rounded-full"
+                          style={{ width: `${progress.total > 0 ? ((progress.sent + progress.failed + progress.skipped) / progress.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                      <div className="flex gap-4 text-xs">
+                        <span className="text-green-600">✓ Sent: {progress.sent}</span>
+                        {progress.skipped > 0 && <span className="text-muted-foreground">↻ Skipped: {progress.skipped}</span>}
+                        {progress.failed > 0 && <span className="text-destructive">✗ Failed: {progress.failed}</span>}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Failed List */}
+                  {failedList.length > 0 && (
+                    <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 space-y-2">
+                      <p className="text-xs font-medium text-destructive">Failed Emails ({failedList.length}):</p>
+                      <div className="space-y-1 max-h-40 overflow-y-auto">
+                        {failedList.map((f, i) => (
+                          <div key={i} className="text-xs flex gap-2">
+                            <span className="text-destructive font-medium shrink-0">{f.email}</span>
+                            <span className="text-muted-foreground truncate">— {f.reason}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2">
                     <Button className="w-full" onClick={handleSend} disabled={sending || !certificateFile}>
                       <Send className="h-4 w-4 mr-2" />
-                      {sending ? "Sending Certificates..." : "Send Certificates to Attendees"}
+                      {sending ? `Sending... (${progress?.sent ?? 0}/${progress?.total ?? "?"})` : "Send Certificates to Attendees"}
                     </Button>
                     <Tooltip text="Sends a personalized certificate to each attendee. Each person receives it only once per event — duplicates are automatically skipped." />
                   </div>
