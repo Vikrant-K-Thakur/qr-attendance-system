@@ -8,6 +8,9 @@ import { Users, QrCode, BarChart2, LogOut, Menu, X, FileJson, RefreshCw, Downloa
 import { cn } from "@/lib/utils";
 import Tooltip from "@/components/Tooltip";
 import { useAuth } from "@/lib/hooks/useAuth";
+import dynamic from "next/dynamic";
+
+const DownloadPDFButton = dynamic(() => import("@/components/DownloadPDFButton"), { ssr: false });
 
 const navItems = [
   { label: "Guidelines", icon: BookOpen, href: "/guidelines" },
@@ -207,6 +210,14 @@ export default function AttendancePage() {
                     Download Excel
                   </Button>
                   <Tooltip text="Downloads the currently filtered attendance records as a CSV file that opens in Excel." />
+                  <DownloadPDFButton
+                    data={data}
+                    ticketType={ticketType}
+                    event={event}
+                    formatDate={formatDate}
+                    disabled={!data || data.records.length === 0}
+                  />
+                  <Tooltip text="Downloads a styled PDF attendance summary report with event details, counts, and full attendee list." />
                 </div>
               </div>
             </CardContent>
